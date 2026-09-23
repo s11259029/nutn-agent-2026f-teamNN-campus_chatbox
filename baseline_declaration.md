@@ -5,11 +5,11 @@
 - 專題名稱：NUTN Campus Chatbot
 - 本週案例：資工系教師資訊查詢與 Email 草稿產生
 - Baseline：`deterministic-fixture-template-v0`
-- 文件狀態：初稿
-- 證據狀態：預期結果／未執行
+- 文件狀態：初稿（最小 Baseline 已實作）
+- 證據狀態：核心函式驗收測試已執行；HTTP API 尚未實作
 - 更新日期：2026-09-23
 
-> 本文件目前為可測試的規格初稿。尚未執行的案例均明確標示為「預期／未執行」，不得視為實際測試結果。
+> 本文件為可測試的規格初稿。三個驗收案例與 Known Failure 已使用 Python 核心函式執行；目前尚未建立 HTTP Server，因此測試中的狀態碼為函式回傳的 HTTP-like status，不代表已完成實際 API 請求。
 
 ## 1. User Story
 
@@ -213,7 +213,7 @@ Content-Type: application/json
 
 使用者送出 `POST /assistant/email-draft`。
 
-**Then（預期／未執行）**
+**Then（已執行／通過）**
 
 - 回傳 HTTP `200`。
 - `can_fulfill` 為 `true`。
@@ -247,7 +247,7 @@ Content-Type: application/json
 
 使用者送出 `POST /assistant/email-draft`。
 
-**Then（預期／未執行）**
+**Then（已執行／通過）**
 
 - Request validation 立即停止處理。
 - 回傳 HTTP `422`。
@@ -270,7 +270,7 @@ Content-Type: application/json
 
 系統驗證 mock provider 的結構化輸出與固定教師資料。
 
-**Then（預期／未執行）**
+**Then（已執行／通過）**
 
 - Response schema 通過，因為 `fake@example.edu.tw` 的格式合法。
 - Grounding validation 發現收件人與固定資料不一致。
@@ -341,7 +341,7 @@ Content-Type: application/json
 }
 ```
 
-### 6.2 預期失敗結果／未執行
+### 6.2 實際失敗結果／已執行
 
 - 回傳 HTTP `404`。
 - `can_fulfill` 為 `false`。
@@ -360,28 +360,48 @@ Content-Type: application/json
 
 | 項目 | 證據狀態 | 說明 |
 | --- | --- | --- |
-| 固定教師資料 fixture | 預期／未建立 | 尚未建立正式教師 JSON |
-| Request validation | 預期／未執行 | 尚未執行必填欄位及 `purpose` 驗證 |
-| 教師資料查詢 | 預期／未執行 | 尚未執行教師姓名比對 |
-| Email 草稿產生 | 預期／未執行 | 尚未建立或執行郵件範本 |
-| Grounding validation | 預期／未執行 | 尚未比對草稿收件人與固定資料 |
-| AC01 正常案例 | 預期／未執行 | 預期回傳 HTTP `200` |
-| AC02 缺少必要輸入 | 預期／未執行 | 預期回傳 HTTP `422` |
-| AC03 Email 無依據 | 預期／未執行 | 預期回傳 HTTP `502` |
-| Known Failure | 預期／未執行 | 預期「王老師」無法通過完整姓名比對 |
+| 固定教師資料 fixture | 已建立 | 合成教師資料位於 `src/email_draft_baseline.py` |
+| Request validation | 已執行／通過 | 已驗證必填欄位與 `purpose` |
+| 教師資料查詢 | 已執行／通過 | 已驗證完整姓名比對 |
+| Email 草稿產生 | 已執行／通過 | 已驗證固定範本、收件人、主旨與正文 |
+| Grounding validation | 已執行／通過 | 已拒絕與 fixture 不一致的收件人 |
+| AC01 正常案例 | 已執行／通過 | 核心函式回傳狀態 `200` |
+| AC02 缺少必要輸入 | 已執行／通過 | 核心函式回傳狀態 `422` |
+| AC03 Email 無依據 | 已執行／通過 | 核心函式回傳狀態 `502` |
+| Known Failure | 已執行／通過 | 「王老師」無法通過完整姓名比對並回傳 `404` |
 | 實際寄送 Email | 不在本週範圍 | 本週只產生草稿 |
 
-### 7.1 尚未提供的工程證據
+### 7.1 實際執行證據
 
-- API 執行指令
-- 實際 Request 與 Response
-- 終端機輸出
-- pytest 測試結果
-- HTTP 狀態碼紀錄
+執行指令：
+
+```bash
+python3 -m unittest discover -s tests -v
+```
+
+執行摘要：
+
+```text
+test_ac01_normal_request_returns_grounded_draft ... ok
+test_ac02_missing_teacher_name_stops_at_request_validation ... ok
+test_ac03_ungrounded_recipient_is_rejected ... ok
+test_known_failure_partial_teacher_name_returns_404 ... ok
+
+Ran 4 tests
+OK
+```
+
+測試程式位於 `tests/test_email_draft_baseline.py`，受測程式位於 `src/email_draft_baseline.py`。測試未使用網路、API Key 或真實教師資料，也沒有寄出 Email。
+
+### 7.2 尚未提供的工程證據
+
+- 實際 HTTP API Request 與 Response
+- HTTP Server 執行紀錄
+- pytest 測試結果（目前使用 Python `unittest`）
 - 延遲與成本紀錄
 - 錯誤與 Failure Log
 
-完成實作後，才將相關狀態更新為「已執行」，並附上實際 command、input、output 與測試結果。在尚未執行前，不將預期結果標示為測試成功。
+後續建立 HTTP API 後，需再次執行端對端測試，並附上實際 Request、Response、狀態碼、延遲與錯誤紀錄。
 
 ## 8. 初稿自我檢核
 
@@ -391,5 +411,5 @@ Content-Type: application/json
 - [x] 設計正常、非法輸入與 Grounding 失敗三個驗收案例。
 - [x] 宣告 Baseline 類型與選擇理由。
 - [x] 記錄一個可重現的 Known Failure。
-- [x] 未執行內容均標示為「預期／未執行」。
+- [x] 核心函式測試與尚未完成的 HTTP API 證據已分開標示。
 - [x] 寄信屬於外部操作，本週固定為 `not_sent`。
