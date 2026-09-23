@@ -393,6 +393,8 @@ OK
 
 測試程式位於 `tests/test_email_draft_baseline.py`，受測程式位於 `src/email_draft_baseline.py`。測試未使用網路、API Key 或真實教師資料，也沒有寄出 Email。
 
+完整執行紀錄位於 `evidence/baseline_test_run_2026-09-23.log`，包含執行時間、Python 版本、Git Commit、指令、原始輸出與證據邊界。
+
 ### 7.2 尚未提供的工程證據
 
 - 實際 HTTP API Request 與 Response
